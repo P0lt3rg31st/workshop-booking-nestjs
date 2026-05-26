@@ -1,0 +1,8 @@
+node_modules
+dist
+data/*.sqlite
+.git
+.gitignore
+README.md
+postman
+api.http
