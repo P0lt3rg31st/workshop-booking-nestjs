@@ -1,0 +1,316 @@
+{
+  "info": {
+    "name": "Workshop Booking System - NestJS",
+    "description": "Коллекция для проверки учебного проекта Workshop Booking System на NestJS. Запускайте запросы сверху вниз.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:3000/api" },
+    { "key": "admin_email", "value": "admin@example.com" },
+    { "key": "user_email", "value": "user@example.com" },
+    { "key": "password", "value": "password123" },
+    { "key": "admin_token", "value": "" },
+    { "key": "user_token", "value": "" },
+    { "key": "workshop_id", "value": "" },
+    { "key": "booking_id", "value": "" },
+    { "key": "workshop_start", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "01 Health check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{base_url}}/health", "host": ["{{base_url}}"], "path": ["health"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('service is alive', function () { pm.expect(pm.response.json().status).to.eql('ok'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Register admin - first user becomes ADMIN",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"displayName\": \"Admin User\",\n  \"password\": \"{{password}}\"\n}"
+        },
+        "url": { "raw": "{{base_url}}/auth/register", "host": ["{{base_url}}"], "path": ["auth", "register"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 201 or already exists', function () { pm.expect([201, 409]).to.include(pm.response.code); });",
+              "if (pm.response.code === 201) {",
+              "  const json = pm.response.json();",
+              "  pm.collectionVariables.set('admin_token', json.accessToken);",
+              "  pm.test('first user is ADMIN', function () { pm.expect(json.user.role).to.eql('ADMIN'); });",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Register normal user",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"displayName\": \"Regular User\",\n  \"password\": \"{{password}}\"\n}"
+        },
+        "url": { "raw": "{{base_url}}/auth/register", "host": ["{{base_url}}"], "path": ["auth", "register"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 201 or already exists', function () { pm.expect([201, 409]).to.include(pm.response.code); });",
+              "if (pm.response.code === 201) {",
+              "  const json = pm.response.json();",
+              "  pm.collectionVariables.set('user_token', json.accessToken);",
+              "  pm.test('normal user is USER', function () { pm.expect(json.user.role).to.eql('USER'); });",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Login admin",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{password}}\"\n}"
+        },
+        "url": { "raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth", "login"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 201', function () { pm.response.to.have.status(201); });",
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('admin_token', json.accessToken);",
+              "pm.test('token exists', function () { pm.expect(json.accessToken).to.be.a('string'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Login user",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"{{password}}\"\n}"
+        },
+        "url": { "raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth", "login"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 201', function () { pm.response.to.have.status(201); });",
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('user_token', json.accessToken);",
+              "pm.test('token exists', function () { pm.expect(json.accessToken).to.be.a('string'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Admin creates workshop",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const future = new Date();",
+              "future.setDate(future.getDate() + 30);",
+              "pm.collectionVariables.set('workshop_start', future.toISOString());"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 201', function () { pm.response.to.have.status(201); });",
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('workshop_id', json.id);",
+              "pm.test('workshop created', function () { pm.expect(json.title).to.eql('Основы REST API'); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Основы REST API\",\n  \"description\": \"Практический мастер-класс по разработке REST API на NestJS.\",\n  \"location\": \"Онлайн\",\n  \"startsAt\": \"{{workshop_start}}\",\n  \"durationMinutes\": 120,\n  \"capacity\": 2\n}"
+        },
+        "url": { "raw": "{{base_url}}/workshops", "host": ["{{base_url}}"], "path": ["workshops"] }
+      }
+    },
+    {
+      "name": "07 Public list workshops",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{base_url}}/workshops", "host": ["{{base_url}}"], "path": ["workshops"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('response is array', function () { pm.expect(pm.response.json()).to.be.an('array'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 Public get workshop details",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{base_url}}/workshops/{{workshop_id}}", "host": ["{{base_url}}"], "path": ["workshops", "{{workshop_id}}"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('has availableSeats', function () { pm.expect(pm.response.json()).to.have.property('availableSeats'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 User creates booking",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{user_token}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"workshopId\": \"{{workshop_id}}\"\n}" },
+        "url": { "raw": "{{base_url}}/bookings", "host": ["{{base_url}}"], "path": ["bookings"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 201', function () { pm.response.to.have.status(201); });",
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('booking_id', json.id);",
+              "pm.test('booking has workshop', function () { pm.expect(json.workshop.id).to.eql(pm.collectionVariables.get('workshop_id')); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 User gets own bookings",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{user_token}}" }],
+        "url": { "raw": "{{base_url}}/bookings", "host": ["{{base_url}}"], "path": ["bookings"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('response is array', function () { pm.expect(pm.response.json()).to.be.an('array'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 Duplicate booking is forbidden",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{user_token}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"workshopId\": \"{{workshop_id}}\"\n}" },
+        "url": { "raw": "{{base_url}}/bookings", "host": ["{{base_url}}"], "path": ["bookings"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": { "exec": ["pm.test('status 409', function () { pm.response.to.have.status(409); });"] }
+        }
+      ]
+    },
+    {
+      "name": "12 Normal user cannot create workshop",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{user_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Запрещённый мастер-класс\",\n  \"description\": \"Обычный пользователь не должен иметь доступ к созданию.\",\n  \"location\": \"Онлайн\",\n  \"startsAt\": \"{{workshop_start}}\",\n  \"durationMinutes\": 60,\n  \"capacity\": 5\n}"
+        },
+        "url": { "raw": "{{base_url}}/workshops", "host": ["{{base_url}}"], "path": ["workshops"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": { "exec": ["pm.test('status 403', function () { pm.response.to.have.status(403); });"] }
+        }
+      ]
+    },
+    {
+      "name": "13 User cancels own booking",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{user_token}}" }],
+        "url": { "raw": "{{base_url}}/bookings/{{booking_id}}", "host": ["{{base_url}}"], "path": ["bookings", "{{booking_id}}"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": { "exec": ["pm.test('status 204', function () { pm.response.to.have.status(204); });"] }
+        }
+      ]
+    }
+  ]
+}

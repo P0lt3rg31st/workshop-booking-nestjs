@@ -1,0 +1,71 @@
+@baseUrl = http://localhost:3000/api
+@adminToken = paste_admin_token_here
+@userToken = paste_user_token_here
+@workshopId = paste_workshop_id_here
+@bookingId = paste_booking_id_here
+
+### Health
+GET {{baseUrl}}/health
+
+### Register first user: ADMIN
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "displayName": "Admin User",
+  "password": "password123"
+}
+
+### Register normal user
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "displayName": "Regular User",
+  "password": "password123"
+}
+
+### Login admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "password123"
+}
+
+### Admin creates workshop
+POST {{baseUrl}}/workshops
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "title": "Основы REST API",
+  "description": "Практический мастер-класс по разработке REST API на NestJS.",
+  "location": "Онлайн",
+  "startsAt": "2026-12-20T12:00:00.000Z",
+  "durationMinutes": 120,
+  "capacity": 10
+}
+
+### Public list workshops
+GET {{baseUrl}}/workshops
+
+### User creates booking
+POST {{baseUrl}}/bookings
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "workshopId": "{{workshopId}}"
+}
+
+### User gets own bookings
+GET {{baseUrl}}/bookings
+Authorization: Bearer {{userToken}}
+
+### User cancels own booking
+DELETE {{baseUrl}}/bookings/{{bookingId}}
+Authorization: Bearer {{userToken}}
