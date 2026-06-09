@@ -1,14 +1,4 @@
-node_modules/
-dist/
-data/*.sqlite
-.env
-npm-debug.log*
-.DS_Store
-node_modules/
-dist/
-.env
 .idea/
-data/*.db
-data/*.sqlite
-data/*.sqlite3
-data/
+.vscode/
+.DS_Store
+Thumbs.db
