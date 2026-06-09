@@ -1,0 +1,12 @@
+services:
+  web:
+    build: .
+    container_name: workshop-booking-django
+    ports:
+      - "8000:8000"
+    environment:
+      DEBUG: "1"
+      SECRET_KEY: "dev-secret-key-for-workshop-booking-system"
+      ALLOWED_HOSTS: "localhost,127.0.0.1,0.0.0.0"
+    volumes:
+      - ./data:/app/data
